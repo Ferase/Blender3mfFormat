@@ -141,7 +141,7 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
                 self.resource_objects = {}
                 self.resource_materials = {}
                 scene_metadata = self.read_metadata(root, scene_metadata)
-                self.read_materials(root)
+                self.read_materials(root, self.use_color_group)
                 self.read_objects(root)
                 self.build_items(root, scale_unit)
 
@@ -392,7 +392,7 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
         return metadata
 
-    def read_materials(self, root):
+    def read_materials(self, root, use_color_group):
         """
         Read out all of the material resources from the 3MF document.
 
@@ -442,17 +442,17 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
             if len(self.resource_materials[material_id]) == 0:
                 del self.resource_materials[material_id]  # Don't leave empty material sets hanging.
 
-        # Import materials using colorgroup if enabled by user
-        if self.use_color_group == True:
-          for colorgroup_item in root.iterfind("./3mf:resources/m:colorgroup", MODEL_NAMESPACES):
-            try:
-                material_id = colorgroup_item.attrib["id"]
-            except KeyError:
-                log.warning("Encountered a colorgroup item without resource ID.")
-                continue  # Need to have an ID, or no item can reference to the materials. Skip this one.
-            if material_id in self.resource_materials:
-                log.warning(f"Duplicate material ID: {material_id}")
-                continue
+        # Import materials using Color Group if enabled by user
+        if use_color_group is True:
+            for colorgroup_item in root.iterfind("./3mf:resources/m:colorgroup", MODEL_NAMESPACES):
+                try:
+                    material_id = colorgroup_item.attrib["id"]
+                except KeyError:
+                    log.warning("Encountered a colorgroup item without resource ID.")
+                    continue  # Need to have an ID, or no item can reference to the materials. Skip this one.
+                if material_id in self.resource_materials:
+                    log.warning(f"Duplicate material ID: {material_id}")
+                    continue
 
             # Use a dictionary mapping indices to resources, because some indices may be skipped due to being invalid.
             self.resource_materials[material_id] = {}

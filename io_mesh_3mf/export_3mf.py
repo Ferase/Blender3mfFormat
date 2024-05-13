@@ -112,7 +112,7 @@ class Export3MF(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         root = xml.etree.ElementTree.Element(f"{{{MODEL_NAMESPACE}}}model")
 
         # Include 3MF Materials Extension namespace if using Color Group
-        if self.use_color_group == True:
+        if self.use_color_group is True:
             xml.etree.ElementTree.register_namespace("m", MODEL_MATERIALS_EXTENSION_NAMESPACE)
 
         scene_metadata = Metadata()
@@ -204,13 +204,14 @@ class Export3MF(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         """
         Write the materials on the specified blender objects to a 3MF document.
 
-        We'll write all materials to one single <basematerials> tag in the resources.
+        We'll write all materials to one single <basematerials> or <colorgroup> tag in the resources.
 
         Aside from writing the materials to the document, this function also returns a mapping from the names of the
         materials in Blender (which must be unique) to the index in the <basematerials> material group. Using that
         mapping, the objects and triangles can write down an index referring to the list of <base> tags.
 
-        Since the <base> material can only hold a color, we'll write the diffuse color of the material to the file.
+        Since the <base> or <color> material can only hold a color, we'll write the diffuse color of the material to
+        the file.
         :param resources_element: A <resources> node from a 3MF document.
         :param blender_objects: A list of Blender objects that may have materials which we need to write to the
         document.
@@ -248,13 +249,18 @@ class Export3MF(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                     self.next_resource_id += 1
                     basematerials_element = xml.etree.ElementTree.SubElement(
                         resources_element,
-                        f"{{{MODEL_NAMESPACE}}}basematerials" if use_color_group != True else f"{{{MODEL_MATERIALS_EXTENSION_NAMESPACE}}}colorgroup", attrib={
+                        f"{{{MODEL_NAMESPACE}}}basematerials" if use_color_group is not True else
+                        f"{{{MODEL_MATERIALS_EXTENSION_NAMESPACE}}}colorgroup", attrib={
                             f"{{{MODEL_NAMESPACE}}}id": self.material_resource_id
                         })
-                xml.etree.ElementTree.SubElement(basematerials_element, f"{{{MODEL_NAMESPACE}}}base" if use_color_group != True else f"{{{MODEL_MATERIALS_EXTENSION_NAMESPACE}}}color", attrib={
-                    f"{{{MODEL_NAMESPACE}}}name": material_name,
-                    f"{{{MODEL_NAMESPACE}}}displaycolor" if use_color_group != True else f"{{{MODEL_NAMESPACE}}}color": color_hex
-                })
+                xml.etree.ElementTree.SubElement(
+                    basematerials_element,
+                    f"{{{MODEL_NAMESPACE}}}base" if use_color_group is not True else
+                    f"{{{MODEL_MATERIALS_EXTENSION_NAMESPACE}}}color", attrib={
+                        f"{{{MODEL_NAMESPACE}}}name": material_name,
+                        f"{{{MODEL_NAMESPACE}}}displaycolor" if use_color_group is not True else
+                        f"{{{MODEL_NAMESPACE}}}color": color_hex
+                    })
                 name_to_index[material_name] = next_index
                 next_index += 1
 
@@ -316,7 +322,8 @@ class Export3MF(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         object_element = xml.etree.ElementTree.SubElement(resources_element, f"{{{MODEL_NAMESPACE}}}object")
         object_element.attrib[f"{{{MODEL_NAMESPACE}}}id"] = str(new_resource_id)
         if len(blender_object.name) > 0:
-            object_element.attrib[f"{{{MODEL_NAMESPACE}}}name"] = blender_object.name # Add object.name attribute for named object support in Prusaslicer
+            # Add object.name attribute for named object support in Prusaslicer
+            object_element.attrib[f"{{{MODEL_NAMESPACE}}}name"] = blender_object.name
 
         metadata = Metadata()
         metadata.retrieve(blender_object)
