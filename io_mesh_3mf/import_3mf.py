@@ -62,7 +62,7 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
     use_color_group: bpy.props.BoolProperty(
         name="Use Color Group",
         description="Import object material colors from Color Group. Overrides any Base Materials with same id found.",
-        default=False)
+        default=True)
 
     def __init__(self):
         """
