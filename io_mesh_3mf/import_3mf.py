@@ -454,38 +454,38 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
                     log.warning(f"Duplicate material ID: {material_id}")
                     continue
 
-            # Use a dictionary mapping indices to resources, because some indices may be skipped due to being invalid.
-            self.resource_materials[material_id] = {}
-            index = 0
+                # Use a dictionary mapping indices to resources, because some indices may be skipped due to being invalid.
+                self.resource_materials[material_id] = {}
+                index = 0
 
-            # "Base" must be the stupidest name for a material resource. Oh well.
-            for color_item in colorgroup_item.iterfind("./m:color", MODEL_NAMESPACES):
-                name = color_item.attrib.get("name", "3MF Material")
-                color = color_item.attrib.get("color")
-                if color is not None:
-                    # Parse the color. It's a hexadecimal number indicating RGB or RGBA.
-                    color = color.lstrip("#")  # Should start with a #. We'll be lenient if it's not.
-                    try:
-                        color_int = int(color, 16)
-                        # Separate out up to four bytes from this int, from right to left.
-                        b1 = (color_int & 0x000000FF) / 255
-                        b2 = ((color_int & 0x0000FF00) >> 8) / 255
-                        b3 = ((color_int & 0x00FF0000) >> 16) / 255
-                        b4 = ((color_int & 0xFF000000) >> 24) / 255
-                        if len(color) == 6:  # RGB format.
-                            color = (b3, b2, b1, 1.0)  # b1, b2 and b3 are B, G, R respectively. b4 is always 0.
-                        else:  # RGBA format, or invalid.
-                            color = (b4, b3, b2, b1)  # b1, b2, b3 and b4 are A, B, G, R respectively.
-                    except ValueError:
-                        log.warning(f"Invalid color for material {name} of resource {material_id}: {color}")
-                        color = None  # Don't add a color for this material.
+                # "Base" must be the stupidest name for a material resource. Oh well.
+                for color_item in colorgroup_item.iterfind("./m:color", MODEL_NAMESPACES):
+                    name = color_item.attrib.get("name", "3MF Material")
+                    color = color_item.attrib.get("color")
+                    if color is not None:
+                        # Parse the color. It's a hexadecimal number indicating RGB or RGBA.
+                        color = color.lstrip("#")  # Should start with a #. We'll be lenient if it's not.
+                        try:
+                            color_int = int(color, 16)
+                            # Separate out up to four bytes from this int, from right to left.
+                            b1 = (color_int & 0x000000FF) / 255
+                            b2 = ((color_int & 0x0000FF00) >> 8) / 255
+                            b3 = ((color_int & 0x00FF0000) >> 16) / 255
+                            b4 = ((color_int & 0xFF000000) >> 24) / 255
+                            if len(color) == 6:  # RGB format.
+                                color = (b3, b2, b1, 1.0)  # b1, b2 and b3 are B, G, R respectively. b4 is always 0.
+                            else:  # RGBA format, or invalid.
+                                color = (b4, b3, b2, b1)  # b1, b2, b3 and b4 are A, B, G, R respectively.
+                        except ValueError:
+                            log.warning(f"Invalid color for material {name} of resource {material_id}: {color}")
+                            color = None  # Don't add a color for this material.
 
-                # Input is valid. Create a resource.
-                self.resource_materials[material_id][index] = ResourceMaterial(name=name, color=color)
-                index += 1
+                    # Input is valid. Create a resource.
+                    self.resource_materials[material_id][index] = ResourceMaterial(name=name, color=color)
+                    index += 1
 
-            if len(self.resource_materials[material_id]) == 0:
-                del self.resource_materials[material_id]  # Don't leave empty material sets hanging.
+                if len(self.resource_materials[material_id]) == 0:
+                    del self.resource_materials[material_id]  # Don't leave empty material sets hanging.
 
     def read_objects(self, root):
         """
