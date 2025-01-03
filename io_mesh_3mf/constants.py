@@ -37,9 +37,11 @@ MODEL_MIMETYPE = "application/vnd.ms-package.3dmanufacturing-3dmodel+xml"  # MIM
 # Constants in the 3D model file.
 MODEL_NAMESPACE = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
 MODEL_MATERIALS_EXTENSION_NAMESPACE = "http://schemas.microsoft.com/3dmanufacturing/material/2015/02"
+MODEL_PRODUCTION_EXTENSION_NAMESPACE = "http://schemas.microsoft.com/3dmanufacturing/production/2015/06"
 MODEL_NAMESPACES = {
     "3mf": MODEL_NAMESPACE,
-    "m": MODEL_MATERIALS_EXTENSION_NAMESPACE
+    "m": MODEL_MATERIALS_EXTENSION_NAMESPACE,
+    "p": MODEL_PRODUCTION_EXTENSION_NAMESPACE
 }
 MODEL_DEFAULT_UNIT = "millimeter"  # If the unit is missing, it will be this.
 

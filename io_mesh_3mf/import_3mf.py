@@ -142,7 +142,7 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
                 self.resource_materials = {}
                 scene_metadata = self.read_metadata(root, scene_metadata)
                 self.read_materials(root, self.use_color_group)
-                self.read_objects(root)
+                self.read_objects(root, files_by_content_type.get(MODEL_MIMETYPE, []))
                 self.build_items(root, scale_unit)
 
         scene_metadata.store(bpy.context.scene)
@@ -454,7 +454,7 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
                     log.warning(f"Duplicate material ID: {material_id}")
                     continue
 
-                # Use a dictionary mapping indices to resources, because some indices may be skipped due to being invalid.
+                # Use a dictionary mapping indices to resources, some indices may be skipped due to being invalid.
                 self.resource_materials[material_id] = {}
                 index = 0
 
@@ -487,7 +487,7 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
                 if len(self.resource_materials[material_id]) == 0:
                     del self.resource_materials[material_id]  # Don't leave empty material sets hanging.
 
-    def read_objects(self, root):
+    def read_objects(self, root, model_files):
         """
         Reads all repeatable build objects from the resources of an XML root node.
 
@@ -500,6 +500,10 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
             except KeyError:
                 log.warning("Object resource without ID!")
                 continue  # ID is required, otherwise the build can't refer to it.
+
+            if objectid in self.resource_objects:
+                log.warning(f"Object id {objectid} already exists. Skipping reading it again.")
+                continue
 
             pid = object_node.attrib.get("pid")  # Material ID.
             pindex = object_node.attrib.get("pindex")  # Index within a collection of materials.
@@ -517,7 +521,7 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
 
             vertices = self.read_vertices(object_node)
             triangles, materials = self.read_triangles(object_node, material, pid)
-            components = self.read_components(object_node)
+            components = self.read_components(object_node, model_files)
             metadata = Metadata()
             for metadata_node in object_node.iterfind("./3mf:metadatagroup", MODEL_NAMESPACES):
                 metadata = self.read_metadata(metadata_node, metadata)
@@ -623,7 +627,7 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
                 continue  # No fallback this time. Leave out the entire triangle.
         return vertices, materials
 
-    def read_components(self, object_node):
+    def read_components(self, object_node, model_files = None):
         """
         Reads out the components from an XML node of an object.
 
@@ -639,6 +643,29 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
             except KeyError:  # ID is required.
                 continue  # Ignore this invalid component.
             transform = self.parse_transformation(component_node.attrib.get("transform", ""))
+
+            try:
+                component_path = component_node.attrib[f"{{{MODEL_PRODUCTION_EXTENSION_NAMESPACE}}}path"].lstrip("/")
+                component_model_found = False
+                for model_file in model_files:
+                    if model_file.name == component_path:
+                        component_model_found = True
+                        document = xml.etree.ElementTree.ElementTree(file=model_file)
+                        if document is None:
+                            log.warning(f"Component id {objectid} referenced model file path {model_file.name}"
+                                        "is corrupt or unreadable.")
+                            continue
+                        root = document.getroot()
+                        self.read_objects(root, model_files)
+                        break
+                if component_model_found is False:
+                    log.error(f"Component id {objectid} referenced model file path {model_file.name} not found in 3MF")
+            except KeyError:  # No file path found.
+                log.info(f"No referenced model file path found for component id {objectid}")
+                continue
+            except xml.etree.ElementTree.ParseError as e:
+                log.error(f"3MF document in {component_path} is malformed: {str(e)}")
+                continue
 
             result.append(Component(resource_object=objectid, transformation=transform))
         return result
