@@ -487,7 +487,7 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
                 if len(self.resource_materials[material_id]) == 0:
                     del self.resource_materials[material_id]  # Don't leave empty material sets hanging.
 
-    def read_objects(self, root, model_files = None):
+    def read_objects(self, root, model_files=None):
         """
         Reads all repeatable build objects from the resources of an XML root node.
 
@@ -627,7 +627,7 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
                 continue  # No fallback this time. Leave out the entire triangle.
         return vertices, materials
 
-    def read_components(self, object_node, model_files = None):
+    def read_components(self, object_node, model_files=None):
         """
         Reads out the components from an XML node of an object.
 
@@ -662,7 +662,6 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
                     log.error(f"Component id {objectid} referenced model file path {model_file.name} not found in 3MF")
             except KeyError:  # No file path found.
                 log.info(f"No referenced model file path found for component id {objectid}")
-                continue
             except xml.etree.ElementTree.ParseError as e:
                 log.error(f"3MF document in {component_path} is malformed: {str(e)}")
                 continue
