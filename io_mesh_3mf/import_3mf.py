@@ -487,7 +487,7 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
                 if len(self.resource_materials[material_id]) == 0:
                     del self.resource_materials[material_id]  # Don't leave empty material sets hanging.
 
-    def read_objects(self, root, model_files):
+    def read_objects(self, root, model_files = None):
         """
         Reads all repeatable build objects from the resources of an XML root node.
 
