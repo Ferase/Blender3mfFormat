@@ -64,11 +64,11 @@ class Import3MF(bpy.types.Operator, bpy_extras.io_utils.ImportHelper):
         description="Import object material colors from Color Group. Overrides any Base Materials with same id found.",
         default=True)
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """
         Initializes the importer with empty fields.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.resource_objects = {}  # Dictionary mapping resource IDs to ResourceObjects.
 
         # Dictionary mapping resource IDs to dictionaries mapping indexes to ResourceMaterial objects.
